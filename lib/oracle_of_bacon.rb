@@ -20,13 +20,15 @@ class OracleOfBacon
   validate :from_does_not_equal_to
 
    def from_does_not_equal_to
-#    if @from == @to
-#      self.errors.add(:from, 'cannot be the same as To')
-#    end
+    if @from == @to
+      self.errors.add(:from, 'cannot be the same as To')
+    end
   end
 
   def initialize(api_key='')
-    # your code here
+    @api_key = api_key
+    @from = 'Kevin Bacon'
+    @to = 'Kevin Bacon'
   end
 
   def find_connections
@@ -41,14 +43,16 @@ class OracleOfBacon
       Net::ProtocolError => e
       # convert all of these into a generic OracleOfBacon::NetworkError,
       #  but keep the original error message
-      # your code here
+      raise NetworkError, e
     end
-    # your code here: create the OracleOfBacon::Response object
+    Response.new(xml)
   end
 
   def make_uri_from_arguments
-    # your code here: set the @uri attribute to properly-escaped URI
-    # constructed from the @from, @to, @api_key arguments
+    @api_key = CGI.escape(@api_key)
+    @to = CGI.escape(@to)
+    @from = CGI.escape(@from)
+    @uri = "http://oracleofbacon.org/cgi-bin/xml?p=#{@api_key}&a=#{@to}&b=#{@from}"
   end
       
   class Response
@@ -74,7 +78,18 @@ class OracleOfBacon
     end
 
     def parse_error_response
-     #Your code here.  Assign @type and @data
+      errorArray = @doc.xpath('/error').map(&:text)
+      if errorArray[0].split.first == "No"
+        puts("bad wolf")
+        @type = :badinput
+      elsif errorArray[0].split.first == "There"
+        puts ("link wolf")
+        @type = :unlinkable
+      elsif errorArray[0].split.first == "unauthorized"
+        puts ("access denied")
+        @type = :unauthorized
+      end
+      @data = errorArray[0]
      # based on type attribute and body of the error element
     end
 
@@ -85,7 +100,12 @@ class OracleOfBacon
     end
 
     def parse_graph_response
-      #Your code here
+      @type = :graph
+      actorNames = @doc.xpath('//actor').map(&:text)
+      movieNames = @doc.xpath('//movie').map(&:text)
+      combinedArray = actorNames.zip(movieNames).flatten.compact
+      @data = combinedArray
+      
     end
 
     def parse_unknown_response
