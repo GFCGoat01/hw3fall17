@@ -80,13 +80,10 @@ class OracleOfBacon
     def parse_error_response
       errorArray = @doc.xpath('/error').map(&:text)
       if errorArray[0].split.first == "No"
-        puts("bad wolf")
         @type = :badinput
       elsif errorArray[0].split.first == "There"
-        puts ("link wolf")
         @type = :unlinkable
       elsif errorArray[0].split.first == "unauthorized"
-        puts ("access denied")
         @type = :unauthorized
       end
       @data = errorArray[0]
